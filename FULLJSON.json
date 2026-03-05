@@ -1,0 +1,72 @@
+{
+  "User": {
+    "UserName": "alice",
+    "UserId": "AIDAEXAMPLE",
+    "Arn": "arn:aws:iam::123456789012:user/alice",
+
+    "Roles": [
+      {
+        "RoleName": "S3ReadRole",
+        "RoleId": "AROAXAMPLE",
+        "Arn": "arn:aws:iam::123456789012:role/S3ReadRole",
+
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ec2.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+
+        "AttachedPolicies": [
+          {
+            "PolicyName": "AmazonS3ReadOnlyAccess",
+            "PolicyArn": "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess",
+
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:GetObject",
+                    "s3:ListBucket"
+                  ],
+                  "Resource": [
+                    "arn:aws:s3:::my-bucket",
+                    "arn:aws:s3:::my-bucket/*"
+                  ]
+                }
+              ]
+            }
+          },
+
+          {
+            "PolicyName": "CustomLoggingPolicy",
+            "PolicyArn": "arn:aws:iam::123456789012:policy/LoggingPolicy",
+
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": "*"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

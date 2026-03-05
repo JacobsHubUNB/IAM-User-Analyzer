@@ -1,0 +1,9 @@
+{
+    'AttachedPolicies': [
+        {
+            'PolicyName': 'AmazonS3ReadOnlyAccess',
+            'PolicyArn': 'arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess'
+        }
+    ],
+    'IsTruncated': False
+}

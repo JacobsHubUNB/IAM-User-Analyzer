@@ -1,0 +1,51 @@
+{
+    'Roles': [
+        {
+            'Path': '/',
+            'RoleName': 'S3ReadOnlyRole',
+            'RoleId': 'AROABCDEFG123456789',
+            'Arn': 'arn:aws:iam::123456789012:role/S3ReadOnlyRole',
+            'CreateDate': datetime.datetime(2025, 1, 1, 12, 0, 0),
+            'AssumeRolePolicyDocument': {
+                                            "Version": "2012-10-17",
+                                            "Statement": [
+                                                {
+                                                    "Effect": "Allow",
+                                                    "Principal": {
+                                                        "AWS": "arn:aws:iam::123456789012:root"
+                                                    },
+            "Action": "sts:AssumeRole"
+        }
+    ]
+},
+            'Description': 'Read-only access to S3',
+            'MaxSessionDuration': 3600
+        },
+        {
+            'Path': '/',
+            'RoleName': 'EC2AdminRole',
+            'RoleId': 'AROABCDEFG987654321',
+            'Arn': 'arn:aws:iam::123456789012:role/EC2AdminRole',
+            'CreateDate': datetime.datetime(2024, 12, 10, 9, 30, 0),
+            'AssumeRolePolicyDocument': {"Version": "2012-10-17",
+                                            "Statement": [
+                                                {
+                                                    "Effect": "Allow",
+                                                    "Principal": {
+                                                        "Service": "ec2.amazonaws.com"
+                                                    },
+                                                    "Action": "sts:AssumeRole"
+                                                }
+                                            ]},
+            'Description': 'Full access to EC2 instances',
+            'MaxSessionDuration': 3600
+        }
+    ],
+    'IsTruncated': False,
+    'ResponseMetadata': {
+        'RequestId': 'abcd1234-5678-90ef-ghij-1234567890ab',
+        'HTTPStatusCode': 200,
+        'HTTPHeaders': {...},
+        'RetryAttempts': 0
+    }
+}
