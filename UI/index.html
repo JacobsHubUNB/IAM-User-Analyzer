@@ -1,0 +1,103 @@
+
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IAM Permissions Visualizer</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+  
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🔐</div>
+    <div>
+      <div class="logo-text">IAM GRAPH <span class="tag new">Beta</span></div>
+      <div class="logo-sub">Identity & Access Permissions Visualizer</div>
+    </div>
+  </div>
+  <div class="header-stats">
+    <div class="stat"><span class="stat-val" id="stat-nodes">0</span><span class="stat-label">Nodes</span></div>
+    <div class="stat"><span class="stat-val" id="stat-edges">0</span><span class="stat-label">Edges</span></div>
+    <div class="stat"><span class="stat-val warn" id="stat-warnings">0</span><span class="stat-label">Warnings</span></div>
+    <div class="stat"><span class="stat-val critical" id="stat-critical">0</span><span class="stat-label">Critical</span></div>
+  </div>
+</header>
+
+<div class="main">
+  <div class="sidebar">
+    <!-- INPUT PANEL -->
+    <div class="panel">
+      <div class="panel-header">Policy Input</div>
+      <div class="panel-content">
+        <textarea id="policy-input" placeholder='Paste AWS IAM Policy JSON here...'></textarea>
+        <div class="examples">
+          <button class="btn" onclick="loadExample('wildcard')">▶ Load: Overpermissive Admin Policy</button>
+          <button class="btn secondary" onclick="loadExample('s3')">▶ Load: S3 Read/Write Policy</button>
+          <button class="btn secondary" onclick="loadExample('complex')">▶ Load: Multi-Role Complex Policy</button>
+        </div>
+        <button class="btn" onclick="analyzePolicy()" style="margin-top:10px; border-color: var(--accent3); color: var(--accent3); background: rgba(57,255,133,0.08);">
+          ⚡ ANALYZE &amp; VISUALIZE
+        </button>
+      </div>
+    </div>
+
+    <!-- FILTER -->
+    <div class="panel">
+      <div class="panel-header">Filter View</div>
+      <div class="panel-content" style="padding: 8px 12px;">
+        <select id="filter-type" onchange="applyFilter()">
+          <option value="all">All nodes</option>
+          <option value="Role">Roles only</option>
+          <option value="Resource">Resources only</option>
+          <option value="critical">Critical paths only</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- FINDINGS -->
+    <div class="panel-header" style="border-bottom: 1px solid var(--border);">Security Findings</div>
+    <div class="findings" id="findings-list">
+      <div class="no-findings" style="margin-top: 24px;">
+        <div style="font-size: 24px; margin-bottom: 8px; opacity:0.3;">🛡</div>
+        No policy loaded yet
+      </div>
+    </div>
+  </div>
+
+  <!-- GRAPH -->
+  <div class="graph-area" id="graph-container">
+    <div class="empty-state" id="empty-state">
+      <div class="empty-icon">◈</div>
+      <div class="empty-title">IDENTITY GRAPH</div>
+      <div class="empty-sub">Load a policy to visualize permissions</div>
+    </div>
+    <svg id="graph-svg"></svg>
+
+    <div class="graph-overlay">
+      <div class="legend">
+        <div class="legend-title">Node Types</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#1e4d8c; border: 1px solid #2d6ab5;"></div> IAM Role</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#3d2060; border: 1px solid #6030a0;"></div> Policy</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#1a3d2b; border: 1px solid #2a6045;"></div> Resource</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(255,58,58,0.3); border: 1px solid rgba(255,58,58,0.7);"></div> Critical ⚠</div>
+      </div>
+      <div class="controls">
+        <button class="ctrl-btn" onclick="zoomIn()" title="Zoom In">+</button>
+        <button class="ctrl-btn" onclick="zoomOut()" title="Zoom Out">−</button>
+        <button class="ctrl-btn" onclick="resetZoom()" title="Reset">⊙</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="tooltip"></div>
+
+<script>
+</script>
+</body>
+</html>

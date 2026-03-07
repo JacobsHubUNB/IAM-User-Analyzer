@@ -31,7 +31,7 @@ def analyze(statement, policyNode):
         resources = [resource]
 
     for act in rslt['Actions']:
-        if '*' in act
+        if '*' in act:
             rslt['Risk'] = "MEDIUM"
         else:
             rslt['Risk'] = 'LOW'
@@ -40,7 +40,7 @@ def analyze(statement, policyNode):
         if '*' in resource and 'MEDIUM' in rslt['Risk']:
             rslt['Risk'] = "HIGH"
             rslt['Description'] = 'Wildcard Action And Wildcard Resorces Detected!'
-        else if '*' in resource or 'MEDIUM' in rslt['Risk'] :
+        elif '*' in resource or 'MEDIUM' in rslt['Risk'] :
              rslt['Risk'] = "MEDIUM"
              rslt['Description'] = "Warning Role Contains Wildcard Resource or Action"
         else:
@@ -56,7 +56,7 @@ roles = iam.list_roles()['Roles']
 
 for role in roles:
 
-    policies = iam.list_attached_role_policies(RoleName=role_name)
+    policies = iam.list_attached_role_policies(RoleName=role['RoleName'])
     graph.add_node( role['RoleName'])
     Role_Security_Threats['Role_Analysis'] = {'RoleName': role['RoleName'], 'Policies': [] }
 
