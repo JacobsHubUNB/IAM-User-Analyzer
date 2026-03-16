@@ -1,0 +1,8 @@
+{
+    Effect: Allow
+    Action: PutS3Object
+    Resource: S3Bucket
+    Risk: Low
+    Describtion: Low risk due to limited action  and resource access
+
+}

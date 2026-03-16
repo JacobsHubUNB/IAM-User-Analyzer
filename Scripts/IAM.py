@@ -10,7 +10,7 @@ graph = nx.DiGraph()
 
 #list containing the security threats of every policy of each role
 
-Role_Security_Threats = {}
+Role_Security_Threats = []
 
 #=====================================================================
 # DATA EXTRACTION AND PROCESSING
@@ -18,61 +18,66 @@ Role_Security_Threats = {}
 
 def analyze(statement, policyNode):
     rslt = {'Effect': '', 'Action': '', 'Resource': '', 'Risk': '', 'Description': ''}
+    if isinstance(statement, dict):
+        statement = [statement]
+    counter = 1
+    rslt['Effect'] = {}
+    rslt['Action'] = {}
+    rslt['Resource'] = {}
+    rslt['Risk'] = {}
+    rslt['Description'] = {}
+    for stmt in statement:
+        rslt['Effect'][counter] = stmt.get('Effect', 'Allow')
+        rslt['Action'][counter] = stmt.get('Action', [])
+        rslt['Resource'][counter] = stmt.get('Resource', [])
+        counter+1
 
-    rslt['Effect'] = statement.get('Effect', 'Allow')
-    rslt['Action'] = statement.get('Action', [])
-
-    if isinstance(rslt['Action'], str):   # if it's just one string
-        actions = [action]
-
-    rslt['Resource'] = statement.get('Resource', [])
-
-    if isinstance(rslt['Resource'], str):   # if it's just one string
-        resources = [resource]
-
-    for act in rslt['Actions']:
-        if '*' in act:
-            rslt['Risk'] = "MEDIUM"
+    for act in rslt['Action']:
+        if '*' in rslt['Action'][act]:
+            rslt['Risk'][act] = "MEDIUM"
         else:
-            rslt['Risk'] = 'LOW'
+            rslt['Risk'][act] = 'LOW'
 
     for resource in rslt['Resource']:
-        if '*' in resource and 'MEDIUM' in rslt['Risk']:
+        if '*' in rslt['Resource'][resource] and 'MEDIUM' in rslt['Risk'][resource]:
             rslt['Risk'] = "HIGH"
             rslt['Description'] = 'Wildcard Action And Wildcard Resorces Detected!'
-        elif '*' in resource or 'MEDIUM' in rslt['Risk'] :
+        elif '*' in rslt['Resource'][resource] or 'MEDIUM' in  rslt['Risk'][resource] :
              rslt['Risk'] = "MEDIUM"
              rslt['Description'] = "Warning Role Contains Wildcard Resource or Action"
         else:
             rslt['Risk'] = "LOW"
             rslt['Description'] = "Role Obeys Law of Least Privillage"
-        graph.add_edge(policyNode, resource, Effect = rslt['Effect'], Action = rslt['Action'])
+        graph.add_edge(policyNode,  rslt['Risk'][resource], Effect = rslt['Effect'][resource], Action = rslt['Action'][resource])
     
     return rslt
 
 roles = iam.list_roles()['Roles']
 
 #analyze every policy for every role
-
+count = 0
 for role in roles:
 
-    policies = iam.list_attached_role_policies(RoleName=role['RoleName'])
+    response = iam.list_attached_role_policies(RoleName=role['RoleName'])
+    policies = response['AttachedPolicies'] #*****************weakpoint
     graph.add_node( role['RoleName'])
-    Role_Security_Threats['Role_Analysis'] = {'RoleName': role['RoleName'], 'Policies': [] }
+    Role_Security_Threats.append({'RoleName': role['RoleName'], 'Policies': [] })
 
     for policy in policies:
         policy_name = policy['PolicyName']
         policyReport = {'Policy_Name': policy_name, 'Statement_Report': []} #Each Policy Statement Report
-       
+        Arn = iam.get_policy(PolicyArn = policy['PolicyArn'])
+        version = Arn['Policy']['DefaultVersionId']
+        policyDetails = iam.get_policy_version(PolicyArn = policy['PolicyArn'], VersionId = version)
         graph.add_node(policy_name)
         graph.add_edge(role['RoleName'], policy_name)
-        policy_statement = policy['PolicyDocument']['Statement']
+        policy_statement =policyDetails['PolicyVersion']['Document']['Statement']
 
         #Append Analysis of Each Statement to Statement Report List
         policyReport['Statement_Report'].append( analyze(policy_statement, policy_name))
         
-    Role_Security_Threats['Role_Analysis']['Policies'].append(policyReport) #Append Policy Report of Every Role
-    
+    Role_Security_Threats[count]['Policies'].append(policyReport) #Append Policy Report of Every Role
+    count +1
 
 
 #=====================================================================
