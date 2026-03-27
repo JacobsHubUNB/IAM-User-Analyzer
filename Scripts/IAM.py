@@ -6,50 +6,53 @@ from urllib.parse import unquote
 #Script accessing AWS account
 iam = boto3.client('iam') 
 
-graph = nx.DiGraph()
-
-#list containing the security threats of every policy of each role
+graph = nx.MultiGraph()
 
 Role_Security_Threats = []
-
-#=====================================================================
-# DATA EXTRACTION AND PROCESSING
-#=====================================================================
 
 def analyze(statement, policyNode):
     rslt = {'Effect': '', 'Action': '', 'Resource': '', 'Risk': '', 'Description': ''}
     if isinstance(statement, dict):
         statement = [statement]
-    counter = 1
+    
     rslt['Effect'] = {}
     rslt['Action'] = {}
     rslt['Resource'] = {}
     rslt['Risk'] = {}
-    rslt['Description'] = {}
+    rslt['Description'] = []
+    counter = 1
     for stmt in statement:
-        rslt['Effect'][counter] = stmt.get('Effect', 'Allow')
-        rslt['Action'][counter] = stmt.get('Action', [])
-        rslt['Resource'][counter] = stmt.get('Resource', [])
-        counter+1
+        resource_lst = stmt.get('Resource', [])
+        action_lst = stmt.get('Action', [])
 
-    for act in rslt['Action']:
-        if '*' in rslt['Action'][act]:
-            rslt['Risk'][act] = "MEDIUM"
-        else:
-            rslt['Risk'][act] = 'LOW'
+        rslt['Resource'][counter] = resource_lst[0]
+        rslt['Action'] [counter]= action_lst[0]
+        rslt['Effect'][counter] = stmt.get('Effect','Allow')
+        rslt['Risk'][counter] = ''
 
-    for resource in rslt['Resource']:
-        if '*' in rslt['Resource'][resource] and 'MEDIUM' in rslt['Risk'][resource]:
-            rslt['Risk'] = "HIGH"
-            rslt['Description'] = 'Wildcard Action And Wildcard Resorces Detected!'
-        elif '*' in rslt['Resource'][resource] or 'MEDIUM' in  rslt['Risk'][resource] :
-             rslt['Risk'] = "MEDIUM"
-             rslt['Description'] = "Warning Role Contains Wildcard Resource or Action"
+        if '*' in rslt['Action'][counter] or len(action_lst) >4:
+            rslt['Risk'][counter] = "MEDIUM"
+            rslt['Description'].append("Warning, Wildcard Action Detected")
+        elif len(resource_lst) < 5 and len(action_lst) > 2:
+            rslt['Risk'][counter] = 'MEDIUM'
+            rslt['Description'].append('Too many Permissions, Simplify And Specialize Role')
         else:
-            rslt['Risk'] = "LOW"
-            rslt['Description'] = "Role Obeys Law of Least Privillage"
-        graph.add_edge(policyNode,  rslt['Risk'][resource], Effect = rslt['Effect'][resource], Action = rslt['Action'][resource])
+                rslt['Risk'][counter] = 'LOW'
+
+
+        if '*' in rslt['Resource'][counter] and 'MEDIUM' in rslt['Risk'][counter]:
+            rslt['Risk'][counter] = "HIGH"
+            rslt['Description'].append('\nCritical, Wildcard Resorces AND Action Detected!')
+        elif '*' in rslt['Resource'][counter] or 'MEDIUM' in  rslt['Risk'][counter] :
+                rslt['Risk'][counter] = "MEDIUM"
+                rslt['Description'].append("\nWarning Role Contains Wildcard Resource or Action")
+        else:
+            rslt['Risk'][counter] = "LOW"
+            rslt['Description'].append("Role Obeys Law of Least Resource/Action Privillage")
+
+        graph.add_edge(policyNode,  rslt['Resource'][counter], Overall_Risk = rslt['Risk'][counter], Action = rslt['Action'][counter]) # Number of actions used instead of explicit action list to keep things simple
     
+        counter = counter +1
     return rslt
 
 roles = iam.list_roles()['Roles']
@@ -79,7 +82,6 @@ for role in roles:
     Role_Security_Threats[count]['Policies'].append(policyReport) #Append Policy Report of Every Role
     count +1
 
-
 #=====================================================================
 # FINDINGS PRINITOUT AND JSON EXPORT
 #=====================================================================
@@ -92,8 +94,7 @@ for role in Role_Security_Threats:
     print(f"Role Name: {role['RoleName']}\n")
     for policy in role['Policies']:
         print(f'Policy: {policy['Policy_Name']}\n')
-        print(json.dumps(policy['Statement_Report'], indent=4))
-
+        print(json.dumps(policy['Statement_Report'], indent = 4))
 
 
 print(f"\n{'=' * 60}")
