@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>IAM Permissions Visualizer</title>
   <script src="InterfaceModel.js"></script>
-  <style src = "StyleSheet.css"></style>
+  <link rel = "stylesheet" href = "StyleSheet.css"></link>
 </head>
 <body>
 
@@ -34,9 +34,7 @@
       <div class="panel-content">
         <textarea id="policy-input" placeholder='Paste AWS IAM Policy JSON here...'></textarea>
         <div class="examples">
-          <button class="btn" onclick="loadExample('wildcard')">▶ Load: Overpermissive Admin Policy</button>
-          <button class="btn secondary" onclick="loadExample('s3')">▶ Load: S3 Read/Write Policy</button>
-          <button class="btn secondary" onclick="loadExample('complex')">▶ Load: Multi-Role Complex Policy</button>
+          <button class="btn" onclick="loadPolicy()">▶ Load: IAM User Policy</button>
         </div>
         <button class="btn" onclick="analyzePolicy()" style="margin-top:10px; border-color: var(--accent3); color: var(--accent3); background: rgba(57,255,133,0.08);">
           ⚡ ANALYZE &amp; VISUALIZE
@@ -86,7 +84,7 @@
       </div>
       <div class="controls">
         <button class="ctrl-btn" onclick="zoomIn()" title="Zoom In">+</button>
-        <button class="ctrl-btn" onclick="zoomOut()" title="Zoom Out">−</button>
+        <button class="ctrl-btn" onclick="zoomOut()" title="Zoom Out">-</button>
         <button class="ctrl-btn" onclick="resetZoom()" title="Reset">⊙</button>
       </div>
     </div>

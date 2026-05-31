@@ -6,7 +6,7 @@ from urllib.parse import unquote
 #Script accessing AWS account
 iam = boto3.client('iam') 
 
-graph = nx.MultiGraph()
+graph = nx.MultiDiGraph()
 
 Role_Security_Threats = []
 
@@ -90,12 +90,14 @@ print("=" * 60)
 print("         IAM SECURITY FINDINGS REPORT")
 print("=" * 60)
 print("\n")
-for role in Role_Security_Threats:
-    print(f"Role Name: {role['RoleName']}\n")
-    for policy in role['Policies']:
-        print(f'Policy: {policy['Policy_Name']}\n')
-        print(json.dumps(policy['Statement_Report'], indent = 4))
+with open("role_policy_stmnt.json", "w") as f:
 
+    for role in Role_Security_Threats:
+        print(f"Role Name: {role['RoleName']}\n")
+        for policy in role['Policies']:
+            print(f'Policy: {policy['Policy_Name']}\n')
+            print(json.dumps(policy['Statement_Report'], indent = 4))
+            (json.dump(policy['Statement_Report'], f, indent = 4))
 
 print(f"\n{'=' * 60}")
 print(f"\n📊 Identity Graph Summary:")

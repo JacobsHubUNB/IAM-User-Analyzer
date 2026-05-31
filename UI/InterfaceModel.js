@@ -1,106 +1,8 @@
-
-const EXAMPLES = {
-  wildcard: {
-    "Version": "2012-10-17",
-    "Statement": [
-      {
-        "Sid": "AdminAccess",
-        "Effect": "Allow",
-        "Principal": { "AWS": "arn:aws:iam::123456789012:role/DevOpsTeam" },
-        "Action": "*",
-        "Resource": "*"
-      },
-      {
-        "Sid": "S3FullAccess",
-        "Effect": "Allow",
-        "Principal": { "AWS": "arn:aws:iam::123456789012:role/DataEngineer" },
-        "Action": "s3:*",
-        "Resource": ["arn:aws:s3:::*", "arn:aws:s3:::*/"]
-      },
-      {
-        "Sid": "IAMPassRole",
-        "Effect": "Allow",
-        "Principal": { "AWS": "arn:aws:iam::123456789012:role/DevOpsTeam" },
-        "Action": ["iam:PassRole", "iam:CreateUser"],
-        "Resource": "arn:aws:iam::123456789012:role/*"
-      }
-    ]
-  },
-  s3: {
-    "Version": "2012-10-17",
-    "Statement": [
-      {
-        "Sid": "S3ReadAccess",
-        "Effect": "Allow",
-        "Principal": { "AWS": "arn:aws:iam::123456789012:role/ReadOnlyUser" },
-        "Action": ["s3:GetObject", "s3:ListBucket"],
-        "Resource": "arn:aws:s3:::prod-data-bucket"
-      },
-      {
-        "Sid": "S3WriteAccess",
-        "Effect": "Allow",
-        "Principal": { "AWS": "arn:aws:iam::123456789012:role/DataPipeline" },
-        "Action": ["s3:PutObject", "s3:DeleteObject"],
-        "Resource": "arn:aws:s3:::prod-data-bucket"
-      },
-      {
-        "Sid": "DenyDelete",
-        "Effect": "Deny",
-        "Principal": { "AWS": "arn:aws:iam::123456789012:role/ReadOnlyUser" },
-        "Action": "s3:DeleteObject",
-        "Resource": "arn:aws:s3:::prod-data-bucket"
-      }
-    ]
-  },
-  complex: {
-    "Version": "2012-10-17",
-    "Statement": [
-      {
-        "Sid": "LambdaExecution",
-        "Effect": "Allow",
-        "Principal": { "Service": "lambda.amazonaws.com" },
-        "Action": ["lambda:InvokeFunction", "logs:CreateLogGroup", "logs:PutLogEvents"],
-        "Resource": ["arn:aws:lambda:::function:processor", "arn:aws:logs:::*"]
-      },
-      {
-        "Sid": "EC2FullAdmin",
-        "Effect": "Allow",
-        "Principal": { "AWS": "arn:aws:iam::123456789012:role/SysAdmin" },
-        "Action": "ec2:*",
-        "Resource": "*"
-      },
-      {
-        "Sid": "DynamoDBAccess",
-        "Effect": "Allow",
-        "Principal": { "AWS": ["arn:aws:iam::123456789012:role/AppServer", "arn:aws:iam::123456789012:role/DataPipeline"] },
-        "Action": ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Query"],
-        "Resource": "arn:aws:dynamodb:us-east-1:123456789012:table/Users"
-      },
-      {
-        "Sid": "SecretsAccess",
-        "Effect": "Allow",
-        "Principal": { "AWS": "arn:aws:iam::123456789012:role/AppServer" },
-        "Action": ["secretsmanager:GetSecretValue"],
-        "Resource": "arn:aws:secretsmanager:us-east-1:123456789012:secret:prod/db"
-      },
-      {
-        "Sid": "CrossAccountAssumeRole",
-        "Effect": "Allow",
-        "Principal": { "AWS": "arn:aws:iam::987654321098:role/PartnerRole" },
-        "Action": "sts:AssumeRole",
-        "Resource": "arn:aws:iam::123456789012:role/CrossAccountAccess"
-      }
-    ]
-  }
-};
-
-function loadExample(name) {
-  document.getElementById('policy-input').value = JSON.stringify(EXAMPLES[name], null, 2);
+async function loadPolicy() {
+  const response = await fetch('Scripts\graph_export.json').json;
+  document.getElementById('policy-input').value = JSON.stringify(response, null, 2);
 }
 
-// ============================
-// ANALYSIS ENGINE
-// ============================
 let graphData = { nodes: [], links: [] };
 let allFindings = [];
 let simulation = null;
@@ -559,6 +461,6 @@ function resetZoom() {
 
 // Auto-load wildcard example
 window.addEventListener('load', () => {
-  loadExample('wildcard');
+  loadPolicy();
   setTimeout(analyzePolicy, 200);
 });

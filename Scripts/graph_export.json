@@ -1,5 +1,5 @@
 {
-  "directed": false,
+  "directed": true,
   "multigraph": true,
   "graph": {},
   "nodes": [
@@ -66,69 +66,6 @@
       "key": 0
     },
     {
-      "Overall_Risk": "HIGH",
-      "Action": "access-analyzer:getAccessPreview",
-      "source": "*",
-      "target": "AWSSupportServiceRolePolicy",
-      "key": 0
-    },
-    {
-      "Overall_Risk": "HIGH",
-      "Action": "eks:describeAccessEntry",
-      "source": "*",
-      "target": "AWSSupportServiceRolePolicy",
-      "key": 1
-    },
-    {
-      "Overall_Risk": "HIGH",
-      "Action": "oam:getLink",
-      "source": "*",
-      "target": "AWSSupportServiceRolePolicy",
-      "key": 2
-    },
-    {
-      "Overall_Risk": "HIGH",
-      "Action": "access-analyzer:ListAnalyzers",
-      "source": "*",
-      "target": "AWSTrustedAdvisorServiceRolePolicy",
-      "key": 0
-    },
-    {
-      "Overall_Risk": "HIGH",
-      "Action": "appflow:DescribeConnector",
-      "source": "*",
-      "target": "AmazonAppFlowReadOnlyAccess",
-      "key": 0
-    },
-    {
-      "Overall_Risk": "HIGH",
-      "Action": "datazone:AcceptPredictions",
-      "source": "*",
-      "target": "AmazonDataZoneDomainExecutionRolePolicy",
-      "key": 0
-    },
-    {
-      "Overall_Risk": "HIGH",
-      "Action": "r",
-      "source": "*",
-      "target": "AmazonDataZoneDomainExecutionRolePolicy",
-      "key": 1
-    },
-    {
-      "Overall_Risk": "HIGH",
-      "Action": "cloudwatch:*",
-      "source": "*",
-      "target": "AmazonEC2RoleforDataPipelineRole",
-      "key": 0
-    },
-    {
-      "Overall_Risk": "HIGH",
-      "Action": "*",
-      "source": "*",
-      "target": "AdministratorAccess",
-      "key": 0
-    },
-    {
       "source": "AWSServiceRoleForSupport",
       "target": "AWSSupportServiceRolePolicy",
       "key": 0
@@ -148,8 +85,36 @@
       "key": 0
     },
     {
+      "Overall_Risk": "HIGH",
+      "Action": "access-analyzer:getAccessPreview",
+      "source": "AWSSupportServiceRolePolicy",
+      "target": "*",
+      "key": 0
+    },
+    {
+      "Overall_Risk": "HIGH",
+      "Action": "eks:describeAccessEntry",
+      "source": "AWSSupportServiceRolePolicy",
+      "target": "*",
+      "key": 1
+    },
+    {
+      "Overall_Risk": "HIGH",
+      "Action": "oam:getLink",
+      "source": "AWSSupportServiceRolePolicy",
+      "target": "*",
+      "key": 2
+    },
+    {
       "source": "AWSServiceRoleForTrustedAdvisor",
       "target": "AWSTrustedAdvisorServiceRolePolicy",
+      "key": 0
+    },
+    {
+      "Overall_Risk": "HIGH",
+      "Action": "access-analyzer:ListAnalyzers",
+      "source": "AWSTrustedAdvisorServiceRolePolicy",
+      "target": "*",
       "key": 0
     },
     {
@@ -163,13 +128,48 @@
       "key": 0
     },
     {
+      "Overall_Risk": "HIGH",
+      "Action": "appflow:DescribeConnector",
+      "source": "AmazonAppFlowReadOnlyAccess",
+      "target": "*",
+      "key": 0
+    },
+    {
+      "Overall_Risk": "HIGH",
+      "Action": "datazone:AcceptPredictions",
+      "source": "AmazonDataZoneDomainExecutionRolePolicy",
+      "target": "*",
+      "key": 0
+    },
+    {
+      "Overall_Risk": "HIGH",
+      "Action": "r",
+      "source": "AmazonDataZoneDomainExecutionRolePolicy",
+      "target": "*",
+      "key": 1
+    },
+    {
       "source": "ReadAndWriteS3",
       "target": "AmazonEC2RoleforDataPipelineRole",
       "key": 0
     },
     {
+      "Overall_Risk": "HIGH",
+      "Action": "cloudwatch:*",
+      "source": "AmazonEC2RoleforDataPipelineRole",
+      "target": "*",
+      "key": 0
+    },
+    {
       "source": "S3AdminAccess",
       "target": "AdministratorAccess",
+      "key": 0
+    },
+    {
+      "Overall_Risk": "HIGH",
+      "Action": "*",
+      "source": "AdministratorAccess",
+      "target": "*",
       "key": 0
     }
   ]

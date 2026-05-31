@@ -1,0 +1,143 @@
+[
+    {
+        "Effect": {
+            "1": "Allow"
+        },
+        "Action": {
+            "1": "logs:CreateLogGroup"
+        },
+        "Resource": {
+            "1": "*"
+        },
+        "Risk": {
+            "1": "HIGH"
+        },
+        "Description": [
+            "Warning, Wildcard Action Detected",
+            "\nCritical, Wildcard Resorces AND Action Detected!"
+        ]
+    }
+][
+    {
+        "Effect": {
+            "1": "Allow",
+            "2": "Allow",
+            "3": "Allow",
+            "4": "Allow",
+            "5": "Allow"
+        },
+        "Action": {
+            "1": "apigateway:GET",
+            "2": "iam:DeleteRole",
+            "3": "access-analyzer:getAccessPreview",
+            "4": "eks:describeAccessEntry",
+            "5": "oam:getLink"
+        },
+        "Resource": {
+            "1": "arn:aws:apigateway:*::/account",
+            "2": "arn:aws:iam::*:role/aws-service-role/support.amazonaws.com/AWSServiceRoleForSupport",
+            "3": "*",
+            "4": "*",
+            "5": "*"
+        },
+        "Risk": {
+            "1": "MEDIUM",
+            "2": "MEDIUM",
+            "3": "HIGH",
+            "4": "HIGH",
+            "5": "HIGH"
+        },
+        "Description": [
+            "\nWarning Role Contains Wildcard Resource or Action",
+            "\nWarning Role Contains Wildcard Resource or Action",
+            "Warning, Wildcard Action Detected",
+            "\nCritical, Wildcard Resorces AND Action Detected!",
+            "Warning, Wildcard Action Detected",
+            "\nCritical, Wildcard Resorces AND Action Detected!",
+            "Warning, Wildcard Action Detected",
+            "\nCritical, Wildcard Resorces AND Action Detected!"
+        ]
+    }
+][
+    {
+        "Effect": {
+            "1": "Allow"
+        },
+        "Action": {
+            "1": "access-analyzer:ListAnalyzers"
+        },
+        "Resource": {
+            "1": "*"
+        },
+        "Risk": {
+            "1": "HIGH"
+        },
+        "Description": [
+            "Warning, Wildcard Action Detected",
+            "\nCritical, Wildcard Resorces AND Action Detected!"
+        ]
+    }
+][
+    {
+        "Effect": {
+            "1": "Allow",
+            "2": "Allow"
+        },
+        "Action": {
+            "1": "datazone:AcceptPredictions",
+            "2": "r"
+        },
+        "Resource": {
+            "1": "*",
+            "2": "*"
+        },
+        "Risk": {
+            "1": "HIGH",
+            "2": "HIGH"
+        },
+        "Description": [
+            "Warning, Wildcard Action Detected",
+            "\nCritical, Wildcard Resorces AND Action Detected!",
+            "Warning, Wildcard Action Detected",
+            "\nCritical, Wildcard Resorces AND Action Detected!"
+        ]
+    }
+][
+    {
+        "Effect": {
+            "1": "Allow"
+        },
+        "Action": {
+            "1": "cloudwatch:*"
+        },
+        "Resource": {
+            "1": "*"
+        },
+        "Risk": {
+            "1": "HIGH"
+        },
+        "Description": [
+            "Warning, Wildcard Action Detected",
+            "\nCritical, Wildcard Resorces AND Action Detected!"
+        ]
+    }
+][
+    {
+        "Effect": {
+            "1": "Allow"
+        },
+        "Action": {
+            "1": "*"
+        },
+        "Resource": {
+            "1": "*"
+        },
+        "Risk": {
+            "1": "HIGH"
+        },
+        "Description": [
+            "Warning, Wildcard Action Detected",
+            "\nCritical, Wildcard Resorces AND Action Detected!"
+        ]
+    }
+]
