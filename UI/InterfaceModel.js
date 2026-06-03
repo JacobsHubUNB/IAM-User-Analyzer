@@ -1,8 +1,17 @@
+// ----------------------------------------------------------------
+// loadPolicy: pulls the JSON file produced by Scripts/IAM.py
+// (build_policy_dict) into the textarea so analyzePolicy can read it.
+// Path is relative to index.html which lives in /UI/, so we step up
+// one directory to reach /Scripts/.
+// ----------------------------------------------------------------
 async function loadPolicy() {
-  const response = await fetch('Scripts\graph_export.json').json;
-  document.getElementById('policy-input').value = JSON.stringify(response, null, 2);
+  const response = await fetch('../Scripts/policy_for_js.json');
+  const data = await response.json();
+  document.getElementById('policy-input').value = JSON.stringify(data, null, 2);
 }
 
+// Module-level state — held across re-analyses so the D3 simulation
+// and SVG selection can be torn down and rebuilt on each click.
 let graphData = { nodes: [], links: [] };
 let allFindings = [];
 let simulation = null;
@@ -10,6 +19,8 @@ let svg = null;
 let zoomBehavior = null;
 let g = null;
 
+// shortName: trims an ARN down to a human label, so
+// "arn:aws:s3:::my-bucket" displays as "my-bucket".
 function shortName(arn) {
   if (!arn || arn === '*') return '*';
   const parts = arn.split(':');
@@ -18,6 +29,13 @@ function shortName(arn) {
   return last.length > 0 ? last : arn.substring(0, 24);
 }
 
+// ============================================================
+// analyzePolicy: the heart of the app. Reads the IAM policy JSON
+// from the textarea, walks every Statement, classifies risk,
+// builds the graph data (nodes + links), and emits human-readable
+// findings. Called on page load and whenever the user clicks
+// "ANALYZE & VISUALIZE".
+// ============================================================
 function analyzePolicy() {
   const raw = document.getElementById('policy-input').value.trim();
   if (!raw) { alert('Please paste an IAM policy JSON first.'); return; }
@@ -27,10 +45,17 @@ function analyzePolicy() {
   catch(e) { alert('Invalid JSON: ' + e.message); return; }
 
   const statements = policy.Statement || [];
+  // Use a Map so adding the same node id twice is a no-op (dedup).
+  // Without this we'd produce duplicate nodes whenever two statements
+  // touch the same role, policy, or service.
   const nodes = new Map();
   const links = [];
   const findings = [];
 
+  // addNode: idempotent insert. First call creates the node with
+  // its label + metadata; later calls with the same id silently skip.
+  // The trailing spread of `meta` lets callers override defaults
+  // like `label` and `fullId`.
   function addNode(id, type, meta = {}) {
     if (!nodes.has(id)) nodes.set(id, { id, type, label: shortName(id), fullId: id, ...meta });
     return id;
@@ -42,7 +67,14 @@ function analyzePolicy() {
     const actions = Array.isArray(stmt.Action) ? stmt.Action : [stmt.Action].filter(Boolean);
     const resources = Array.isArray(stmt.Resource) ? stmt.Resource : [stmt.Resource].filter(Boolean);
 
-    // Extract principals
+    // ----------------------------------------------------------------
+    // Principal extraction — AWS allows three shapes here:
+    //   1) "*"                              → public, anyone
+    //   2) "arn:aws:iam::123:role/x"        → a single ARN as a string
+    //   3) { "AWS": [...], "Service": ... } → an object grouping principals by type
+    // We flatten all of them into a single list so downstream code
+    // doesn't have to care about the shape.
+    // ----------------------------------------------------------------
     let principals = [];
     if (stmt.Principal) {
       const p = stmt.Principal;
@@ -65,7 +97,17 @@ function analyzePolicy() {
       return 'Principal';
     };
 
-    // Risk analysis
+    // ----------------------------------------------------------------
+    // Risk flags — each one is a heuristic for a known IAM antipattern:
+    //   hasWildcardAction:   any action is "*" or ends with ":*" (e.g. "s3:*")
+    //   hasWildcardResource: any resource is "*"
+    //   hasBothWildcards:    root-equivalent access if not denied
+    //   hasIAMWrite:         can mutate IAM itself → privilege-escalation risk
+    //   hasSTSAssume:        can assume other roles → lateral-movement risk
+    //   hasSecretsAccess:    can read secrets / SSM parameters
+    //   isDeny:              Deny overrides Allow, so we suppress findings
+    //                        on Deny rows (they're protective, not risky).
+    // ----------------------------------------------------------------
     const hasWildcardAction = actions.some(a => a === '*' || a.endsWith(':*'));
     const hasWildcardResource = resources.some(r => r === '*');
     const hasBothWildcards = hasWildcardAction && hasWildcardResource;
@@ -98,14 +140,37 @@ function analyzePolicy() {
       });
     });
 
-    // Add policy → resource edges
+    // ----------------------------------------------------------------
+    // RESOURCE AGGREGATION BY AWS SERVICE
+    // A broad policy can list hundreds of resource ARNs. Rendering
+    // one graph node per ARN turns the canvas into an unreadable
+    // "hairball." Instead we bucket this statement's ARNs by service
+    // (the 3rd colon-segment of an ARN: arn:aws:<service>:...) and
+    // emit ONE node per (statement, service) pair. The full ARN list
+    // rides along in node.arns so the hover-tooltip can show every
+    // entry on demand — overview on the canvas, detail one hover away.
+    // ----------------------------------------------------------------
+    const resourcesByService = {};
     resources.forEach(resource => {
-      const rId = addNode(resource, 'Resource', {
-        service: resource === '*' ? 'all' : (resource.split(':')[2] || 'unknown')
+      const service = resource === '*' ? 'all-services' : (resource.split(':')[2] || 'unknown');
+      if (!resourcesByService[service]) resourcesByService[service] = [];
+      resourcesByService[service].push(resource);
+    });
+
+    Object.entries(resourcesByService).forEach(([service, arns]) => {
+      // Scope the node id per-statement so two statements that both
+      // touch s3 get distinct nodes, each carrying its own ARN list.
+      const serviceNodeId = `service:${sid}:${service}`;
+      addNode(serviceNodeId, 'Resource', {
+        service,
+        arns,
+        // label overrides shortName(id); shows "<service> (<count>)" on the canvas
+        label: service === 'all-services' ? '* (all)' : `${service} (${arns.length})`,
+        fullId: `${service} → ${arns.length} resource${arns.length === 1 ? '' : 's'}`,
       });
       links.push({
         source: policyNodeId,
-        target: rId,
+        target: serviceNodeId,
         actions: actions.slice(0, 3),
         effect,
         isDeny,
@@ -377,7 +442,16 @@ function renderGraph(data) {
     .attr('font-family', 'JetBrains Mono, monospace')
     .text(d => d.label.length > 14 ? d.label.substring(0, 13) + '…' : d.label);
 
-  // Tooltip
+  // ----------------------------------------------------------------
+  // Tooltip = the floating info-card that appears next to the cursor
+  // when you hover a node. The empty <div id="tooltip"></div> lives in
+  // index.html; we fill its innerHTML on mouseover, move it with the
+  // cursor on mousemove, and hide it on mouseout. The new `d.arns`
+  // block is what unlocks the aggregation trick: a service node
+  // labeled "apigateway (50)" on the canvas reveals every one of its
+  // 50 ARNs in a scrollable list here (capped at 25 with a "…and N more"
+  // tail so the tooltip stays a sane size).
+  // ----------------------------------------------------------------
   const tooltip = document.getElementById('tooltip');
   nodeGroup
     .on('mouseover', function(event, d) {
@@ -390,6 +464,13 @@ function renderGraph(data) {
         ${d.service ? `<div class="tt-row"><span>Service</span><span>${d.service}</span></div>` : ''}
         ${actions.length ? `<div class="tt-actions"><div style="font-size:8px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.1em;">Actions</div>
           ${actions.map(a => `<span class="tt-action-chip ${a==='*'||a.endsWith(':*')||a.includes('iam:')||a.includes('sts:')?'danger':''}">${a}</span>`).join('')}
+        </div>` : ''}
+        ${d.arns ? `<div class="tt-actions" style="margin-top:8px;">
+          <div style="font-size:8px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.1em;">Resources (${d.arns.length})</div>
+          <div style="max-height:180px;overflow-y:auto;font-size:9px;font-family:JetBrains Mono,monospace;line-height:1.4;">
+            ${d.arns.slice(0, 25).map(a => `<div style="padding:1px 0;color:var(--muted);word-break:break-all;">${a}</div>`).join('')}
+            ${d.arns.length > 25 ? `<div style="padding:4px 0;color:#ffb627;">…and ${d.arns.length - 25} more</div>` : ''}
+          </div>
         </div>` : ''}
       `;
       tooltip.classList.add('visible');

@@ -1,12 +1,15 @@
-
-</html><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>IAM Permissions Visualizer</title>
-  <script src="InterfaceModel.js"></script>
-  <link rel = "stylesheet" href = "StyleSheet.css"></link>
+  <!-- D3 v7 — powers the force-directed graph, zoom/drag, and SVG selections.
+       MUST load before InterfaceModel.js or the analyzer crashes with `d3 is not defined`. -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <!-- defer = wait until the DOM is fully parsed before running -->
+  <script src="InterfaceModel.js" defer></script>
+  <link rel="stylesheet" href="StyleSheet.css">
 </head>
 <body>
 

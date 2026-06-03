@@ -142,8 +142,8 @@
       "key": 0
     },
     {
-      "Overall_Risk": "HIGH",
-      "Action": "r",
+      "Overall_Risk": "MEDIUM",
+      "Action": "ram:GetResourceShareAssociations",
       "source": "AmazonDataZoneDomainExecutionRolePolicy",
       "target": "*",
       "key": 1

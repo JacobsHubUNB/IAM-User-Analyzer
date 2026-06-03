@@ -11,49 +11,72 @@ graph = nx.MultiDiGraph()
 Role_Security_Threats = []
 
 def analyze(statement, policyNode):
-    rslt = {'Effect': '', 'Action': '', 'Resource': '', 'Risk': '', 'Description': ''}
+    rslt = {'Effect': {}, 'Action': {}, 'Resource': {}, 'Risk': {}, 'Description': []}
     if isinstance(statement, dict):
         statement = [statement]
-    
-    rslt['Effect'] = {}
-    rslt['Action'] = {}
-    rslt['Resource'] = {}
-    rslt['Risk'] = {}
-    rslt['Description'] = []
+
     counter = 1
     for stmt in statement:
         resource_lst = stmt.get('Resource', [])
         action_lst = stmt.get('Action', [])
+        # IAM allows scalar string OR list — normalize so downstream code sees a list
+        if isinstance(resource_lst, str):
+            resource_lst = [resource_lst]
+        if isinstance(action_lst, str):
+            action_lst = [action_lst]
 
-        rslt['Resource'][counter] = resource_lst[0]
-        rslt['Action'] [counter]= action_lst[0]
-        rslt['Effect'][counter] = stmt.get('Effect','Allow')
+        rslt['Resource'][counter] = resource_lst
+        rslt['Action'][counter] = action_lst
+        rslt['Effect'][counter] = stmt.get('Effect', 'Allow')
         rslt['Risk'][counter] = ''
 
-        if '*' in rslt['Action'][counter] or len(action_lst) >4:
+        has_wild_action = any('*' in a for a in action_lst)
+        has_wild_resource = any('*' in r for r in resource_lst)
+
+        if has_wild_action or len(action_lst) > 4:
             rslt['Risk'][counter] = "MEDIUM"
             rslt['Description'].append("Warning, Wildcard Action Detected")
         elif len(resource_lst) < 5 and len(action_lst) > 2:
             rslt['Risk'][counter] = 'MEDIUM'
             rslt['Description'].append('Too many Permissions, Simplify And Specialize Role')
         else:
-                rslt['Risk'][counter] = 'LOW'
+            rslt['Risk'][counter] = 'LOW'
 
-
-        if '*' in rslt['Resource'][counter] and 'MEDIUM' in rslt['Risk'][counter]:
+        if has_wild_resource and 'MEDIUM' in rslt['Risk'][counter]:
             rslt['Risk'][counter] = "HIGH"
             rslt['Description'].append('\nCritical, Wildcard Resorces AND Action Detected!')
-        elif '*' in rslt['Resource'][counter] or 'MEDIUM' in  rslt['Risk'][counter] :
-                rslt['Risk'][counter] = "MEDIUM"
-                rslt['Description'].append("\nWarning Role Contains Wildcard Resource or Action")
+        elif has_wild_resource or 'MEDIUM' in rslt['Risk'][counter]:
+            rslt['Risk'][counter] = "MEDIUM"
+            rslt['Description'].append("\nWarning Role Contains Wildcard Resource or Action")
         else:
             rslt['Risk'][counter] = "LOW"
             rslt['Description'].append("Role Obeys Law of Least Resource/Action Privillage")
 
-        graph.add_edge(policyNode,  rslt['Resource'][counter], Overall_Risk = rslt['Risk'][counter], Action = rslt['Action'][counter]) # Number of actions used instead of explicit action list to keep things simple
-    
-        counter = counter +1
+        # Graph edge target has to be a single node id — use first resource as representative
+        graph_target = resource_lst[0] if resource_lst else '*'
+        graph_action = action_lst[0] if action_lst else '*'
+        graph.add_edge(policyNode, graph_target, Overall_Risk=rslt['Risk'][counter], Action=graph_action)
+
+        counter = counter + 1
     return rslt
+
+def build_policy_dict(role_security_threats):
+    statements = []
+    for role in role_security_threats:
+        role_name = role['RoleName']
+        for policy in role['Policies']:
+            policy_name = policy['Policy_Name']
+            for stmt_report in policy['Statement_Report']:
+                for counter in stmt_report['Effect']:
+                    statements.append({
+                        'Sid': f'{role_name}__{policy_name}__{counter}',
+                        'Effect': stmt_report['Effect'][counter],
+                        'Action': stmt_report['Action'][counter],
+                        'Resource': stmt_report['Resource'][counter],
+                        'Principal': role_name,
+                        'Risk': stmt_report['Risk'][counter],
+                    })
+    return {'Version': '2012-10-17', 'Statement': statements}
 
 roles = iam.list_roles()['Roles']
 
@@ -80,7 +103,7 @@ for role in roles:
         policyReport['Statement_Report'].append( analyze(policy_statement, policy_name))
         
     Role_Security_Threats[count]['Policies'].append(policyReport) #Append Policy Report of Every Role
-    count +1
+    count += 1
 
 #=====================================================================
 # FINDINGS PRINITOUT AND JSON EXPORT
@@ -90,14 +113,17 @@ print("=" * 60)
 print("         IAM SECURITY FINDINGS REPORT")
 print("=" * 60)
 print("\n")
-with open("role_policy_stmnt.json", "w") as f:
 
-    for role in Role_Security_Threats:
-        print(f"Role Name: {role['RoleName']}\n")
-        for policy in role['Policies']:
-            print(f'Policy: {policy['Policy_Name']}\n')
-            print(json.dumps(policy['Statement_Report'], indent = 4))
-            (json.dump(policy['Statement_Report'], f, indent = 4))
+for role in Role_Security_Threats:
+    print(f"Role Name: {role['RoleName']}\n")
+    for policy in role['Policies']:
+        print(f'Policy: {policy['Policy_Name']}\n')
+        print(json.dumps(policy['Statement_Report'], indent = 4))
+
+policy_dict = build_policy_dict(Role_Security_Threats)
+with open("policy_for_js.json", "w") as f:
+    json.dump(policy_dict, f, indent=2)
+print(f"\n✅ Flattened policy dict written to policy_for_js.json ({len(policy_dict['Statement'])} statements)")
 
 print(f"\n{'=' * 60}")
 print(f"\n📊 Identity Graph Summary:")
