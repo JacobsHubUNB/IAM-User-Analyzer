@@ -50,10 +50,11 @@
       <div class="panel-header">Filter View</div>
       <div class="panel-content" style="padding: 8px 12px;">
         <select id="filter-type" onchange="applyFilter()">
-          <option value="all">All nodes</option>
-          <option value="Role">Roles only</option>
-          <option value="Resource">Resources only</option>
-          <option value="critical">Critical paths only</option>
+          <option value="All Nodes">All Nodes</option>
+          <option value="Identities">Identities Only</option>
+          <option value="Policies">Policies Only</option>
+          <option value="Resource">Resource Only</option>
+          <option value="Critical">Critical Paths Only</option>
         </select>
       </div>
     </div>
@@ -80,23 +81,39 @@
     <div class="graph-overlay">
       <div class="legend">
         <div class="legend-title">Node Types</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#1e4d8c; border: 1px solid #2d6ab5;"></div> IAM Role</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#3d2060; border: 1px solid #6030a0;"></div> Policy</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#1a3d2b; border: 1px solid #2a6045;"></div> Resource</div>
-        <div class="legend-item"><div class="legend-dot" style="background:rgba(255,58,58,0.3); border: 1px solid rgba(255,58,58,0.7);"></div> Critical ⚠</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(30,32,60,0.9); border: 1px solid rgba(167,139,250,0.4);"></div> Principal</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(30,41,95,0.9); border: 1px solid rgba(96,165,250,0.8);"></div> IAM Role</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(54,25,92,0.9); border: 1px solid rgba(167,139,250,0.75);"></div> Policy</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(15,76,56,0.9); border: 1px solid rgba(52,211,153,0.75);"></div> Resource</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(133,77,14,0.8); border: 1px solid #fbbf24;"></div> Warning ◆</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(127,29,29,0.85); border: 1px solid #f87171;"></div> Critical ⚠</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(51,65,85,0.85); border: 1px dashed rgba(148,163,184,0.7);"></div> Deny</div>
       </div>
       <div class="controls">
-        <button class="ctrl-btn" onclick="zoomIn()" title="Zoom In">+</button>
-        <button class="ctrl-btn" onclick="zoomOut()" title="Zoom Out">-</button>
-        <button class="ctrl-btn" onclick="resetZoom()" title="Reset">⊙</button>
+        <!-- Inline SVG icons. fill="none" + stroke="currentColor" means the .ctrl-btn:hover
+             color rule paints the icon automatically — no extra CSS needed. -->
+        <button class="ctrl-btn" onclick="zoomIn()" title="Zoom In" aria-label="Zoom in">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+        </button>
+        <button class="ctrl-btn" onclick="zoomOut()" title="Zoom Out" aria-label="Zoom out">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+        </button>
+        <button class="ctrl-btn" onclick="resetZoom()" title="Reset" aria-label="Reset zoom">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12a9 9 0 1 1-9-9c2.5 0 4.85.94 6.62 2.5L21 8"/>
+            <polyline points="21 3 21 8 16 8"/>
+          </svg>
+        </button>
       </div>
     </div>
   </div>
 </div>
 
 <div id="tooltip"></div>
-
-<script>
-</script>
 </body>
 </html>

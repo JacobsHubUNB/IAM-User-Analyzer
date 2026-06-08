@@ -10,8 +10,65 @@ graph = nx.MultiDiGraph()
 
 Role_Security_Threats = []
 
+def classify_risk(actions, resources, effect, has_condition=False):
+    """Single source of truth for statement risk tiering.
+
+    Returns (tier, reason) where tier ∈ {'HIGH', 'MEDIUM', 'LOW', 'DENY'}
+    and reason is a short human-readable string that ends up in the
+    tooltip on the graph edge.
+    """
+    # Deny statements are protective, not risky — classify separately.
+    if effect == 'Deny':
+        return 'DENY', 'Protective Deny statement'
+
+    has_wild_action = any(a == '*' or a.endswith(':*') for a in actions)
+    has_wild_resource = any(r == '*' for r in resources)
+    has_iam_write = any(
+        a == 'iam:*' or (
+            a.startswith('iam:') and any(
+                verb in a for verb in ('Create', 'Put', 'Attach', 'PassRole', 'Update', 'Delete')
+            )
+        )
+        for a in actions
+    )
+    has_sts_assume = any('sts:AssumeRole' in a for a in actions)
+    has_secret_access = any(
+        a.startswith('secretsmanager:') or
+        a.startswith('kms:Decrypt') or
+        a.startswith('ssm:Get')
+        for a in actions
+    )
+
+    # HIGH — any single one of these justifies a critical finding.
+    if has_wild_action and has_wild_resource:
+        return 'HIGH', 'Wildcard action on wildcard resource (root-equivalent access)'
+    if has_iam_write and has_wild_resource:
+        return 'HIGH', 'IAM mutation on wildcard resource (privilege escalation risk)'
+    if has_sts_assume and has_wild_resource:
+        return 'HIGH', 'sts:AssumeRole on wildcard resource (account-takeover risk)'
+    if has_secret_access and has_wild_resource:
+        return 'HIGH', 'Secrets / KMS access on wildcard resource'
+
+    # MEDIUM — worth fixing but not critical danger.
+    if has_wild_action:
+        return 'MEDIUM', 'Wildcard action on specific resources'
+    if has_wild_resource:
+        return 'MEDIUM', 'Specific actions on wildcard resource'
+    if has_iam_write:
+        return 'MEDIUM', 'IAM mutation actions (privilege-escalation potential)'
+    if has_sts_assume:
+        return 'MEDIUM', 'Cross-account role assumption'
+    if len(actions) > 15:
+        return 'MEDIUM', f'Excessive scope ({len(actions)} actions in one statement)'
+
+    # LOW — bounded, specific, low blast radius.
+    if has_condition:
+        return 'LOW', 'Specific actions on specific resources (Condition-constrained)'
+    return 'LOW', 'Specific actions on specific resources'
+
+
 def analyze(statement, policyNode):
-    rslt = {'Effect': {}, 'Action': {}, 'Resource': {}, 'Risk': {}, 'Description': []}
+    rslt = {'Effect': {}, 'Action': {}, 'Resource': {}, 'Risk': {}, 'RiskReason': {}, 'Description': []}
     if isinstance(statement, dict):
         statement = [statement]
 
@@ -25,37 +82,22 @@ def analyze(statement, policyNode):
         if isinstance(action_lst, str):
             action_lst = [action_lst]
 
+        effect = stmt.get('Effect', 'Allow')
+        has_condition = bool(stmt.get('Condition'))
+
         rslt['Resource'][counter] = resource_lst
         rslt['Action'][counter] = action_lst
-        rslt['Effect'][counter] = stmt.get('Effect', 'Allow')
-        rslt['Risk'][counter] = ''
+        rslt['Effect'][counter] = effect
 
-        has_wild_action = any('*' in a for a in action_lst)
-        has_wild_resource = any('*' in r for r in resource_lst)
-
-        if has_wild_action or len(action_lst) > 4:
-            rslt['Risk'][counter] = "MEDIUM"
-            rslt['Description'].append("Warning, Wildcard Action Detected")
-        elif len(resource_lst) < 5 and len(action_lst) > 2:
-            rslt['Risk'][counter] = 'MEDIUM'
-            rslt['Description'].append('Too many Permissions, Simplify And Specialize Role')
-        else:
-            rslt['Risk'][counter] = 'LOW'
-
-        if has_wild_resource and 'MEDIUM' in rslt['Risk'][counter]:
-            rslt['Risk'][counter] = "HIGH"
-            rslt['Description'].append('\nCritical, Wildcard Resorces AND Action Detected!')
-        elif has_wild_resource or 'MEDIUM' in rslt['Risk'][counter]:
-            rslt['Risk'][counter] = "MEDIUM"
-            rslt['Description'].append("\nWarning Role Contains Wildcard Resource or Action")
-        else:
-            rslt['Risk'][counter] = "LOW"
-            rslt['Description'].append("Role Obeys Law of Least Resource/Action Privillage")
+        risk, reason = classify_risk(action_lst, resource_lst, effect, has_condition)
+        rslt['Risk'][counter] = risk
+        rslt['RiskReason'][counter] = reason
+        rslt['Description'].append(f'{policyNode}#{counter} → {risk}: {reason}')
 
         # Graph edge target has to be a single node id — use first resource as representative
         graph_target = resource_lst[0] if resource_lst else '*'
         graph_action = action_lst[0] if action_lst else '*'
-        graph.add_edge(policyNode, graph_target, Overall_Risk=rslt['Risk'][counter], Action=graph_action)
+        graph.add_edge(policyNode, graph_target, Overall_Risk=risk, Action=graph_action, RiskReason=reason)
 
         counter = counter + 1
     return rslt
@@ -75,6 +117,7 @@ def build_policy_dict(role_security_threats):
                         'Resource': stmt_report['Resource'][counter],
                         'Principal': role_name,
                         'Risk': stmt_report['Risk'][counter],
+                        'RiskReason': stmt_report['RiskReason'][counter],
                     })
     return {'Version': '2012-10-17', 'Statement': statements}
 
